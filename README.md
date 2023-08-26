@@ -1,7 +1,9 @@
 # testsuite
 
 testsuite provides xUnit style test suite setup and teardown behavior
-for golang's testing.T library.
+for golang's testing.T library missing from the Go ecosystem:
+
+https://awesome-go.com/testing/
 
 ## Features
 
