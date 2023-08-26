@@ -1,0 +1,3 @@
+test:
+	go test -v -coverprofile cover.out  -covermode=count ./...
+	go tool cover -func=cover.out
