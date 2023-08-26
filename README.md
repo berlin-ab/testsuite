@@ -3,6 +3,13 @@
 testsuite provides xUnit style test suite setup and teardown behavior
 for golang's testing.T library.
 
+## Features
+
+- SetupSuite/TeardownSuite
+- Setup/Teardown per test
+- Multiple suites per test function
+- Simple abstraction wrapping standard testing.T
+
 ## Usage: 
 
     import (
