@@ -82,6 +82,16 @@ func TestTestSuite(t *testing.T) {
 		})
 	})
 
+	testsuite.New(t, "it allows a testsuite to be skipped", func(s *testsuite.S) {
+		s.SetupSuite(func(t *testing.T) {
+			t.Skip()
+		})
+
+		s.Run("do nothing", func(t *testing.T) {
+			require.True(t, false)
+		})
+	})
+
 	testsuite.New(t, "it does nothing when no tests are specified", func(s *testsuite.S) {
 		s.Setup(func(t *testing.T) {
 			require.True(t, false)
