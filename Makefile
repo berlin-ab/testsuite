@@ -1,3 +1,3 @@
 test:
 	go test -v -shuffle=on -race -coverprofile cover.out  -covermode=atomic ./...
-	go tool cover -func=cover.out
+	go tool cover -func=cover.out | tee coverage.out
