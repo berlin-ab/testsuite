@@ -49,3 +49,72 @@ https://awesome-go.com/testing/
             })
         })
     }
+
+
+## Example:
+
+    package testsuite_test
+
+    import (
+        "testing"
+    
+        "github.com/berlin-ab/testsuite"
+    )
+
+    func TestSample(t *testing.T) {
+        testsuite.New(t, "first example", func(s *testsuite.S) {
+            s.SetupSuite(func(t *testing.T) {
+                t.Log("setup first suite")
+            })
+    
+            s.TeardownSuite(func(t *testing.T) {
+                t.Log("teardown first suite")
+            })
+    
+            s.Setup(func(t *testing.T) {
+                t.Log("setup test")
+            })
+    
+            s.Teardown(func(t *testing.T) {
+                t.Log("teardown test")
+            })
+    
+            s.Run("a test", func(t *testing.T) {
+                t.Log("running test")
+            })
+        })
+    
+        testsuite.New(t, "second example", func(s *testsuite.S) {
+            s.SetupSuite(func(t *testing.T) {
+                t.Log("setup second suite")
+            })
+    
+            s.TeardownSuite(func(t *testing.T) {
+                t.Log("teardown second suite")
+            })
+    
+            s.Setup(func(t *testing.T) {
+                t.Log("setup test")
+            })
+    
+            s.Teardown(func(t *testing.T) {
+                t.Log("teardown test")
+            })
+    
+            s.Run("a test", func(t *testing.T) {
+                t.Log("running test")
+            })
+        })
+    }
+
+    $ go test -v ./sample_test.go | grep sample_test
+    sample_test.go:12: setup first suite
+    sample_test.go:20: setup test
+    sample_test.go:28: running test
+    sample_test.go:24: teardown test
+    sample_test.go:16: teardown first suite
+    sample_test.go:34: setup second suite
+    sample_test.go:42: setup test
+    sample_test.go:50: running test
+    sample_test.go:46: teardown test
+    sample_test.go:38: teardown second suite
