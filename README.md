@@ -7,6 +7,7 @@ for golang's testing.T library.
 
     import (
         "testing"
+
         "github.com/berlin-ab/testsuite"
     )
 
