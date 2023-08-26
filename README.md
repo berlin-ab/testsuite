@@ -1,5 +1,7 @@
 # testsuite
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/berlin-ab/testsuite.svg)](https://pkg.go.dev/github.com/berlin-ab/testsuite)
+
 testsuite provides xUnit style test suite setup and teardown behavior
 for golang's testing.T library missing from the Go ecosystem:
 
