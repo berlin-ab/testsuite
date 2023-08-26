@@ -40,4 +40,10 @@ for golang's testing.T library.
                 // defines a test using standard *testing.T
             })
         })
+
+        testsuite.New(t, "another suite", func(s *testsuite.S) {
+            s.Run("it does something else", func(t *testing.T) {
+                // defines a test using standard *testing.T
+            })
+        })
     }
