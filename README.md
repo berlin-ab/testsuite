@@ -12,6 +12,7 @@ https://awesome-go.com/testing/
 - SetupSuite/TeardownSuite
 - Setup/Teardown per test
 - Multiple suites per test function
+- Nested suites
 - Simple abstraction wrapping standard testing.T
 
 ## Usage: 
@@ -42,6 +43,12 @@ https://awesome-go.com/testing/
     
             s.Run("it does something", func(t *testing.T) {
                 // defines a test using standard *testing.T
+            })
+
+            s.When("in a context", func(s *testsuite.S) {
+                s.Run("it does something in this context", func(t *testing.T) {
+                    // defines a test using standard *testing.T
+                })
             })
         })
 
