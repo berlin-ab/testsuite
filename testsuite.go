@@ -37,9 +37,7 @@ func (s *S) Run(name string, f func(*testing.T)) {
 		// configure this particular test with setup and teardown
 		s.setup(t)
 
-		defer func() {
-			s.teardown(t)
-		}()
+		defer s.teardown(t)
 
 		// run the specified test
 		f(t)
@@ -76,9 +74,7 @@ func (s *S) TeardownSuite(f func(t *testing.T)) {
 func (s *S) needsSetup() bool {
 	// double check that the reader always gets the right value
 	s.mu.Lock()
-	defer func() {
-		s.mu.Unlock()
-	}()
+	defer s.mu.Unlock()
 
 	// only report needsSetup=true the first time a test case is
 	// defined in a suite
