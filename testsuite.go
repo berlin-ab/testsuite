@@ -19,7 +19,7 @@ type S struct {
 	setup         func(*testing.T)
 	teardown      func(*testing.T)
 	setupSuite    func(t *testing.T)
-	teardownSuite *func(t *testing.T)
+	teardownSuite func(t *testing.T)
 
 	// lock
 	testCaseDefined bool
@@ -68,7 +68,7 @@ func (s *S) SetupSuite(f func(t *testing.T)) {
 
 // TeardownSuite specifies behavior that should be run after running all tests in the suite
 func (s *S) TeardownSuite(f func(t *testing.T)) {
-	s.teardownSuite = &f
+	s.teardownSuite = f
 }
 
 func (s *S) needsSetup() bool {
@@ -87,16 +87,9 @@ func runSuite(t *testing.T, userProvidedSuite func(*S)) {
 	suite := newSuite(t)
 
 	defer func() {
-		if suite.teardownSuite == nil {
-			return // no teardown specified
+		if suite.testCaseDefined {
+			suite.teardownSuite(t)
 		}
-
-		if !suite.testCaseDefined {
-			return // no tests specified, no need to teardown
-		}
-
-		teardownSuite := *suite.teardownSuite
-		teardownSuite(t)
 	}()
 
 	userProvidedSuite(suite)
@@ -108,7 +101,9 @@ func newSuite(t *testing.T) *S {
 		setupSuite: func(t *testing.T) {
 			// no-op
 		},
-		teardownSuite: nil, // no-op
+		teardownSuite: func(t *testing.T) {
+			// no-op
+		},
 		setup: func(t *testing.T) {
 			// no-op
 		},
