@@ -1,7 +1,7 @@
 package testsuite
 
 import (
-	"sync"
+	"fmt"
 	"testing"
 )
 
@@ -21,15 +21,14 @@ type S struct {
 	setupSuite    func(t *testing.T)
 	teardownSuite func(t *testing.T)
 
-	// lock
 	testCaseDefined bool
-	mu              sync.Mutex
 }
 
 // Run performs a *testing.T Run behavior with the setup/teardown behavior of the
 // testsuite
 func (s *S) Run(name string, f func(*testing.T)) {
 	if s.needsSetup() {
+		s.observeSetup()
 		s.setupSuite(s.t)
 	}
 
@@ -52,35 +51,55 @@ func (s *S) When(context string, userProvidedContext func(s *S)) {
 }
 
 // Setup specifies behavior that should be run before each test in the suite
+//
+// note: must be specified before Run()
 func (s *S) Setup(f func(t *testing.T)) {
+	s.preventHookMisuse("Setup()")
+
 	s.setup = f
 }
 
 // Teardown specifies behavior that should be run after each test in the suite
+//
+// note: must be specified before Run()
 func (s *S) Teardown(f func(t *testing.T)) {
+	s.preventHookMisuse("Teardown()")
+
 	s.teardown = f
 }
 
 // SetupSuite specifies behavior that should be run before running any tests in the suite
+//
+// note: must be specified before Run()
 func (s *S) SetupSuite(f func(t *testing.T)) {
+	s.preventHookMisuse("SetupSuite()")
+
 	s.setupSuite = f
 }
 
 // TeardownSuite specifies behavior that should be run after running all tests in the suite
+//
+// note: must be specified before Run()
 func (s *S) TeardownSuite(f func(t *testing.T)) {
+	s.preventHookMisuse("TeardownSuite()")
+
 	s.teardownSuite = f
 }
 
-func (s *S) needsSetup() bool {
-	// double check that the reader always gets the right value
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *S) preventHookMisuse(hook string) {
+	if s.testCaseDefined {
+		panicFunc(fmt.Sprintf("%v called after run in testsuite", hook))
+	}
+}
 
+func (s *S) needsSetup() bool {
 	// only report needsSetup=true the first time a test case is
 	// defined in a suite
-	val := s.testCaseDefined
+	return !s.testCaseDefined
+}
+
+func (s *S) observeSetup() {
 	s.testCaseDefined = true
-	return !val
 }
 
 func runSuite(t *testing.T, userProvidedSuite func(*S)) {
@@ -111,4 +130,10 @@ func newSuite(t *testing.T) *S {
 			// no-op
 		},
 	}
+}
+
+// panicFunc allows the tests to observe panics without actually
+// panicking.
+var panicFunc = func(message string) {
+	panic(message)
 }
