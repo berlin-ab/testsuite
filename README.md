@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/berlin-ab/testsuite.svg)](https://pkg.go.dev/github.com/berlin-ab/testsuite)
 [![Go Report Card](https://goreportcard.com/badge/github.com/berlin-ab/testsuite)](https://goreportcard.com/report/github.com/berlin-ab/testsuite)
-![Coverage](coverage_badge.png)
+[![Coverage](coverage_badge.png)](coverage-report.html)
 
 testsuite provides xUnit style test suite setup and teardown behavior
 for golang's testing.T library missing from the Go ecosystem:

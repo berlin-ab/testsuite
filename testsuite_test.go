@@ -226,8 +226,6 @@ func TestTestSuite(t *testing.T) {
 		})
 
 		s.Run("it does not allow for setup to be defined after starting the tests", func(t *testing.T) {
-			// we're not able to catch the panics from these functions because
-			// the testing.T framework captures the panic first, so Skip()
 			testsuite.New(t, "suite", func(s *testsuite.S) {
 				s.Run("foo", func(t *testing.T) {
 				})
@@ -285,6 +283,12 @@ func TestTestSuite(t *testing.T) {
 				})
 			})
 			require.True(t, paniced)
+		})
+	})
+
+	t.Run("panic func panics", func(t *testing.T) {
+		require.Panics(t, func() {
+			testsuite.PanicFunc()("message")
 		})
 	})
 }
