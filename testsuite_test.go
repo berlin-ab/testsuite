@@ -204,4 +204,87 @@ func TestTestSuite(t *testing.T) {
 			})
 		})
 	})
+
+	testsuite.New(t, "calling hooks out of order panics", func(s *testsuite.S) {
+		var paniced bool
+		var originalPanic func(message string)
+
+		s.SetupSuite(func(t *testing.T) {
+			originalPanic = testsuite.PanicFunc()
+
+			testsuite.SetPanicFunc(func(message string) {
+				paniced = true
+			})
+		})
+
+		s.Setup(func(t *testing.T) {
+			paniced = false
+		})
+
+		s.TeardownSuite(func(t *testing.T) {
+			testsuite.SetPanicFunc(originalPanic)
+		})
+
+		s.Run("it does not allow for setup to be defined after starting the tests", func(t *testing.T) {
+			// we're not able to catch the panics from these functions because
+			// the testing.T framework captures the panic first, so Skip()
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.Run("foo", func(t *testing.T) {
+				})
+
+				s.Setup(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("it does not allow for setup suite to be defined after starting the tests", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				paniced = false
+
+				s.Run("foo", func(t *testing.T) {
+				})
+
+				s.SetupSuite(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("it does not allow for teardown to be defined after starting the tests", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.Run("foo", func(t *testing.T) {
+				})
+
+				s.Teardown(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("it does not allow for teardown suite to be defined after starting the tests", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.Run("foo", func(t *testing.T) {
+				})
+
+				s.TeardownSuite(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("it considers calling hooks within run", func(t *testing.T) {
+			testsuite.New(t, "it does not allow for teardown suite to be defined after starting the tests", func(s *testsuite.S) {
+				s.Run("foo", func(t *testing.T) {
+					s.Setup(func(t *testing.T) {
+					})
+				})
+			})
+			require.True(t, paniced)
+		})
+	})
 }
