@@ -284,6 +284,66 @@ func TestTestSuite(t *testing.T) {
 			})
 			require.True(t, paniced)
 		})
+
+		s.Run("when does not allow for setup to be defined after starting the tests", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.When("foo", func(s *testsuite.S) {
+				})
+
+				s.Setup(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("when does not allow for setup suite to be defined after starting the tests", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.When("foo", func(s *testsuite.S) {
+				})
+
+				s.SetupSuite(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("when does not allow for teardown to be defined after starting the tests", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.When("foo", func(s *testsuite.S) {
+				})
+
+				s.Teardown(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("when does not allow for teardown suite to be defined after starting the tests", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.When("foo", func(s *testsuite.S) {
+				})
+
+				s.TeardownSuite(func(t *testing.T) {
+				})
+			})
+
+			require.True(t, paniced)
+		})
+
+		s.Run("when considers calling hooks within run", func(t *testing.T) {
+			topSuite := s
+			testsuite.New(t, "it does not allow for teardown suite to be defined after starting the tests", func(s *testsuite.S) {
+				s.When("foo", func(s *testsuite.S) {
+					topSuite.Setup(func(t *testing.T) {
+					})
+				})
+			})
+
+			require.True(t, paniced)
+		})
 	})
 
 	t.Run("panic func panics", func(t *testing.T) {

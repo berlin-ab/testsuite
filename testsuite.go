@@ -22,6 +22,7 @@ type S struct {
 	teardownSuite func(t *testing.T)
 
 	testCaseDefined bool
+	subsuiteDefined bool
 }
 
 // Run performs a *testing.T Run behavior with the setup/teardown behavior of the
@@ -45,6 +46,8 @@ func (s *S) Run(name string, f func(*testing.T)) {
 
 // When specifies a nested suite
 func (s *S) When(context string, userProvidedContext func(s *S)) {
+	s.subsuiteDefined = true
+
 	s.Run(context, func(t *testing.T) {
 		runSuite(t, userProvidedContext)
 	})
@@ -88,7 +91,11 @@ func (s *S) TeardownSuite(f func(t *testing.T)) {
 
 func (s *S) preventHookMisuse(hook string) {
 	if s.testCaseDefined {
-		panicFunc(fmt.Sprintf("%v called after run in testsuite", hook))
+		panicFunc(fmt.Sprintf("%v called after Run() in testsuite", hook))
+	}
+
+	if s.subsuiteDefined {
+		panicFunc(fmt.Sprintf("%v called after When() in testsuite", hook))
 	}
 }
 
