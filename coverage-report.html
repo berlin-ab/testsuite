@@ -87,8 +87,8 @@ import (
 
 // New provides a new test suite that wraps the standard *testing.T behavior
 // with xUnit setup/teardown behavior
-func New(t *testing.T, suiteName string, userProvidedSuite func(*S)) <span class="cov7" title="16">{
-        t.Run(suiteName, func(t *testing.T) </span><span class="cov7" title="16">{
+func New(t *testing.T, suiteName string, userProvidedSuite func(*S)) <span class="cov8" title="20">{
+        t.Run(suiteName, func(t *testing.T) </span><span class="cov8" title="20">{
                 runSuite(t, userProvidedSuite)
         }</span>)
 }
@@ -101,18 +101,22 @@ type S struct {
         setupSuite    func(t *testing.T)
         teardownSuite func(t *testing.T)
 
-        testCaseDefined bool
+        testCaseDefined     bool
+        setupCalled         bool
+        teardownCalled      bool
+        setupSuiteCalled    bool
+        teardownSuiteCalled bool
 }
 
 // Run performs a *testing.T Run behavior with the setup/teardown behavior of the
 // testsuite
-func (s *S) Run(name string, f func(*testing.T)) <span class="cov8" title="27">{
-        if s.needsSetup() </span><span class="cov8" title="19">{
+func (s *S) Run(name string, f func(*testing.T)) <span class="cov8" title="23">{
+        if s.needsSetup() </span><span class="cov7" title="15">{
                 s.observeSetup()
                 s.setupSuite(s.t)
         }</span>
 
-        <span class="cov8" title="26">s.t.Run(name, func(t *testing.T) </span><span class="cov8" title="26">{
+        <span class="cov8" title="22">s.t.Run(name, func(t *testing.T) </span><span class="cov8" title="22">{
                 // configure this particular test with setup and teardown
                 s.setup(t)
 
@@ -123,18 +127,14 @@ func (s *S) Run(name string, f func(*testing.T)) <span class="cov8" title="27">{
         }</span>)
 }
 
-// When specifies a nested suite
-func (s *S) When(context string, userProvidedContext func(s *S)) <span class="cov4" title="4">{
-        s.Run(context, func(t *testing.T) </span><span class="cov4" title="4">{
-                runSuite(t, userProvidedContext)
-        }</span>)
-}
-
 // Setup specifies behavior that should be run before each test in the suite
 //
 // note: must be specified before Run()
-func (s *S) Setup(f func(t *testing.T)) <span class="cov7" title="12">{
-        s.preventHookMisuse("Setup()")
+func (s *S) Setup(f func(t *testing.T)) <span class="cov6" title="11">{
+        const hookName = "Setup()"
+
+        s.preventSetupRedefinition(&amp;s.setupCalled, hookName)
+        s.preventHookMisuseAfterStart(hookName)
 
         s.setup = f
 }</span>
@@ -142,8 +142,11 @@ func (s *S) Setup(f func(t *testing.T)) <span class="cov7" title="12">{
 // Teardown specifies behavior that should be run after each test in the suite
 //
 // note: must be specified before Run()
-func (s *S) Teardown(f func(t *testing.T)) <span class="cov5" title="7">{
-        s.preventHookMisuse("Teardown()")
+func (s *S) Teardown(f func(t *testing.T)) <span class="cov6" title="8">{
+        const hookName = "Teardown()"
+
+        s.preventSetupRedefinition(&amp;s.teardownCalled, hookName)
+        s.preventHookMisuseAfterStart(hookName)
 
         s.teardown = f
 }</span>
@@ -151,8 +154,11 @@ func (s *S) Teardown(f func(t *testing.T)) <span class="cov5" title="7">{
 // SetupSuite specifies behavior that should be run before running any tests in the suite
 //
 // note: must be specified before Run()
-func (s *S) SetupSuite(f func(t *testing.T)) <span class="cov6" title="10">{
-        s.preventHookMisuse("SetupSuite()")
+func (s *S) SetupSuite(f func(t *testing.T)) <span class="cov6" title="12">{
+        const hookName = "SetupSuite()"
+
+        s.preventSetupRedefinition(&amp;s.setupSuiteCalled, hookName)
+        s.preventHookMisuseAfterStart(hookName)
 
         s.setupSuite = f
 }</span>
@@ -160,33 +166,48 @@ func (s *S) SetupSuite(f func(t *testing.T)) <span class="cov6" title="10">{
 // TeardownSuite specifies behavior that should be run after running all tests in the suite
 //
 // note: must be specified before Run()
-func (s *S) TeardownSuite(f func(t *testing.T)) <span class="cov7" title="12">{
-        s.preventHookMisuse("TeardownSuite()")
+func (s *S) TeardownSuite(f func(t *testing.T)) <span class="cov6" title="11">{
+        const hookName = "TeardownSuite()"
+
+        s.preventSetupRedefinition(&amp;s.teardownSuiteCalled, hookName)
+        s.preventHookMisuseAfterStart(hookName)
 
         s.teardownSuite = f
 }</span>
 
-func (s *S) preventHookMisuse(hook string) <span class="cov10" title="41">{
-        if s.testCaseDefined </span><span class="cov4" title="5">{
-                panicFunc(fmt.Sprintf("%v called after run in testsuite", hook))
+func (s *S) preventSetupRedefinition(val *bool, hookName string) <span class="cov10" title="42">{
+        if *val </span><span class="cov4" title="4">{
+                s.panicHookRedefinition(hookName)
+        }</span> else<span class="cov9" title="38"> {
+                *val = true
         }</span>
 }
 
-func (s *S) needsSetup() bool <span class="cov8" title="27">{
+func (s *S) preventHookMisuseAfterStart(hook string) <span class="cov10" title="42">{
+        if s.testCaseDefined </span><span class="cov4" title="5">{
+                panicFunc(fmt.Sprintf("%v called after Run() in testsuite", hook))
+        }</span>
+}
+
+func (s *S) needsSetup() bool <span class="cov8" title="23">{
         // only report needsSetup=true the first time a test case is
         // defined in a suite
         return !s.testCaseDefined
 }</span>
 
-func (s *S) observeSetup() <span class="cov8" title="19">{
+func (s *S) observeSetup() <span class="cov7" title="15">{
         s.testCaseDefined = true
+}</span>
+
+func (s *S) panicHookRedefinition(hook string) <span class="cov4" title="4">{
+        panicFunc(fmt.Sprintf("%v called twice. %v can only be called once", hook, hook))
 }</span>
 
 func runSuite(t *testing.T, userProvidedSuite func(*S)) <span class="cov8" title="20">{
         suite := newSuite(t)
 
         defer func() </span><span class="cov8" title="20">{
-                if suite.testCaseDefined </span><span class="cov8" title="19">{
+                if suite.testCaseDefined </span><span class="cov7" title="15">{
                         suite.teardownSuite(t)
                 }</span>
         }()
@@ -197,13 +218,13 @@ func runSuite(t *testing.T, userProvidedSuite func(*S)) <span class="cov8" title
 func newSuite(t *testing.T) *S <span class="cov8" title="20">{
         return &amp;S{
                 t: t,
-                setupSuite: func(t *testing.T) </span>{<span class="cov6" title="11">
+                setupSuite: func(t *testing.T) </span>{<span class="cov5" title="7">
                         // no-op
                 }</span>,
-                teardownSuite: func(t *testing.T) {<span class="cov6" title="8">
+                teardownSuite: func(t *testing.T) {<span class="cov5" title="7">
                         // no-op
                 }</span>,
-                setup: func(t *testing.T) {<span class="cov6" title="9">
+                setup: func(t *testing.T) {<span class="cov6" title="8">
                         // no-op
                 }</span>,
                 teardown: func(t *testing.T) {<span class="cov7" title="17">

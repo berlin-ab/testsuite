@@ -21,21 +21,6 @@ func TestTestSuite(t *testing.T) {
 			// first suite in same toplevel test function
 			"setup suite",
 
-			// whole inner suite runs
-			"setup",
-			"setup inner suite",
-
-			"setup inner",
-			"test inner",
-			"teardown inner",
-
-			"setup inner",
-			"test another inner",
-			"teardown inner",
-
-			"teardown inner suite",
-			"teardown",
-
 			// first top level Run executes
 			"setup",
 			"some test",
@@ -74,32 +59,6 @@ func TestTestSuite(t *testing.T) {
 
 		s.Teardown(func(t *testing.T) {
 			contents = append(contents, "teardown")
-		})
-
-		s.When("a subcontext happens", func(s *testsuite.S) {
-			s.SetupSuite(func(t *testing.T) {
-				contents = append(contents, "setup inner suite")
-			})
-
-			s.TeardownSuite(func(t *testing.T) {
-				contents = append(contents, "teardown inner suite")
-			})
-
-			s.Setup(func(t *testing.T) {
-				contents = append(contents, "setup inner")
-			})
-
-			s.Teardown(func(t *testing.T) {
-				contents = append(contents, "teardown inner")
-			})
-
-			s.Run("inner test", func(t *testing.T) {
-				contents = append(contents, "test inner")
-			})
-
-			s.Run("another inner test", func(t *testing.T) {
-				contents = append(contents, "test another inner")
-			})
 		})
 
 		s.Run("some test", func(t *testing.T) {
@@ -156,52 +115,6 @@ func TestTestSuite(t *testing.T) {
 
 		s.TeardownSuite(func(t *testing.T) {
 			require.True(t, false)
-		})
-	})
-
-	testsuite.New(t, "it allows for sub-suites", func(s *testsuite.S) {
-		var topLevel string
-		var midLevel string
-		var leafLevel string
-
-		t.Cleanup(func() {
-			require.Equal(t, topLevel, "")
-			require.Equal(t, midLevel, "")
-			require.Equal(t, leafLevel, "")
-		})
-
-		s.Setup(func(t *testing.T) {
-			topLevel = "top level"
-		})
-
-		s.TeardownSuite(func(t *testing.T) {
-			topLevel = ""
-		})
-
-		s.When("a sub suite is defined", func(s *testsuite.S) {
-			s.Setup(func(t *testing.T) {
-				midLevel = "mid level"
-			})
-
-			s.TeardownSuite(func(t *testing.T) {
-				midLevel = ""
-			})
-
-			s.When("a sub sub suite is defined", func(s *testsuite.S) {
-				s.Setup(func(t *testing.T) {
-					leafLevel = "leaf level"
-				})
-
-				s.TeardownSuite(func(t *testing.T) {
-					leafLevel = ""
-				})
-
-				s.Run("a leaf test", func(t *testing.T) {
-					require.Equal(t, topLevel, "top level")
-					require.Equal(t, midLevel, "mid level")
-					require.Equal(t, leafLevel, "leaf level")
-				})
-			})
 		})
 	})
 
@@ -284,10 +197,31 @@ func TestTestSuite(t *testing.T) {
 			})
 			require.True(t, paniced)
 		})
+	})
 
-		s.Run("when does not allow for setup to be defined after starting the tests", func(t *testing.T) {
+	testsuite.New(t, "calling hooks twice panics", func(s *testsuite.S) {
+		var paniced bool
+		var originalPanic func(message string)
+
+		s.SetupSuite(func(t *testing.T) {
+			originalPanic = testsuite.PanicFunc()
+
+			testsuite.SetPanicFunc(func(message string) {
+				paniced = true
+			})
+		})
+
+		s.Setup(func(t *testing.T) {
+			paniced = false
+		})
+
+		s.TeardownSuite(func(t *testing.T) {
+			testsuite.SetPanicFunc(originalPanic)
+		})
+
+		s.Run("it does not allow setup to be run twice", func(t *testing.T) {
 			testsuite.New(t, "suite", func(s *testsuite.S) {
-				s.When("foo", func(s *testsuite.S) {
+				s.Setup(func(t *testing.T) {
 				})
 
 				s.Setup(func(t *testing.T) {
@@ -297,21 +231,9 @@ func TestTestSuite(t *testing.T) {
 			require.True(t, paniced)
 		})
 
-		s.Run("when does not allow for setup suite to be defined after starting the tests", func(t *testing.T) {
+		s.Run("it does not allow teardown to be run twice", func(t *testing.T) {
 			testsuite.New(t, "suite", func(s *testsuite.S) {
-				s.When("foo", func(s *testsuite.S) {
-				})
-
-				s.SetupSuite(func(t *testing.T) {
-				})
-			})
-
-			require.True(t, paniced)
-		})
-
-		s.Run("when does not allow for teardown to be defined after starting the tests", func(t *testing.T) {
-			testsuite.New(t, "suite", func(s *testsuite.S) {
-				s.When("foo", func(s *testsuite.S) {
+				s.Teardown(func(t *testing.T) {
 				})
 
 				s.Teardown(func(t *testing.T) {
@@ -321,24 +243,24 @@ func TestTestSuite(t *testing.T) {
 			require.True(t, paniced)
 		})
 
-		s.Run("when does not allow for teardown suite to be defined after starting the tests", func(t *testing.T) {
+		s.Run("it does not allow setup suite to be run twice", func(t *testing.T) {
 			testsuite.New(t, "suite", func(s *testsuite.S) {
-				s.When("foo", func(s *testsuite.S) {
+				s.SetupSuite(func(t *testing.T) {
 				})
 
-				s.TeardownSuite(func(t *testing.T) {
+				s.SetupSuite(func(t *testing.T) {
 				})
 			})
 
 			require.True(t, paniced)
 		})
 
-		s.Run("when considers calling hooks within run", func(t *testing.T) {
-			topSuite := s
-			testsuite.New(t, "it does not allow for teardown suite to be defined after starting the tests", func(s *testsuite.S) {
-				s.When("foo", func(s *testsuite.S) {
-					topSuite.Setup(func(t *testing.T) {
-					})
+		s.Run("it does not allow teardown suite to be run twice", func(t *testing.T) {
+			testsuite.New(t, "suite", func(s *testsuite.S) {
+				s.TeardownSuite(func(t *testing.T) {
+				})
+
+				s.TeardownSuite(func(t *testing.T) {
 				})
 			})
 
