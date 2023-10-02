@@ -21,8 +21,11 @@ type S struct {
 	setupSuite    func(t *testing.T)
 	teardownSuite func(t *testing.T)
 
-	testCaseDefined bool
-	subsuiteDefined bool
+	testCaseDefined     bool
+	setupCalled         bool
+	teardownCalled      bool
+	setupSuiteCalled    bool
+	teardownSuiteCalled bool
 }
 
 // Run performs a *testing.T Run behavior with the setup/teardown behavior of the
@@ -44,20 +47,14 @@ func (s *S) Run(name string, f func(*testing.T)) {
 	})
 }
 
-// When specifies a nested suite
-func (s *S) When(context string, userProvidedContext func(s *S)) {
-	s.subsuiteDefined = true
-
-	s.Run(context, func(t *testing.T) {
-		runSuite(t, userProvidedContext)
-	})
-}
-
 // Setup specifies behavior that should be run before each test in the suite
 //
 // note: must be specified before Run()
 func (s *S) Setup(f func(t *testing.T)) {
-	s.preventHookMisuse("Setup()")
+	const hookName = "Setup()"
+
+	s.preventSetupRedefinition(&s.setupCalled, hookName)
+	s.preventHookMisuseAfterStart(hookName)
 
 	s.setup = f
 }
@@ -66,7 +63,10 @@ func (s *S) Setup(f func(t *testing.T)) {
 //
 // note: must be specified before Run()
 func (s *S) Teardown(f func(t *testing.T)) {
-	s.preventHookMisuse("Teardown()")
+	const hookName = "Teardown()"
+
+	s.preventSetupRedefinition(&s.teardownCalled, hookName)
+	s.preventHookMisuseAfterStart(hookName)
 
 	s.teardown = f
 }
@@ -75,7 +75,10 @@ func (s *S) Teardown(f func(t *testing.T)) {
 //
 // note: must be specified before Run()
 func (s *S) SetupSuite(f func(t *testing.T)) {
-	s.preventHookMisuse("SetupSuite()")
+	const hookName = "SetupSuite()"
+
+	s.preventSetupRedefinition(&s.setupSuiteCalled, hookName)
+	s.preventHookMisuseAfterStart(hookName)
 
 	s.setupSuite = f
 }
@@ -84,18 +87,25 @@ func (s *S) SetupSuite(f func(t *testing.T)) {
 //
 // note: must be specified before Run()
 func (s *S) TeardownSuite(f func(t *testing.T)) {
-	s.preventHookMisuse("TeardownSuite()")
+	const hookName = "TeardownSuite()"
+
+	s.preventSetupRedefinition(&s.teardownSuiteCalled, hookName)
+	s.preventHookMisuseAfterStart(hookName)
 
 	s.teardownSuite = f
 }
 
-func (s *S) preventHookMisuse(hook string) {
+func (s *S) preventSetupRedefinition(val *bool, hookName string) {
+	if *val {
+		s.panicHookRedefinition(hookName)
+	} else {
+		*val = true
+	}
+}
+
+func (s *S) preventHookMisuseAfterStart(hook string) {
 	if s.testCaseDefined {
 		panicFunc(fmt.Sprintf("%v called after Run() in testsuite", hook))
-	}
-
-	if s.subsuiteDefined {
-		panicFunc(fmt.Sprintf("%v called after When() in testsuite", hook))
 	}
 }
 
@@ -107,6 +117,10 @@ func (s *S) needsSetup() bool {
 
 func (s *S) observeSetup() {
 	s.testCaseDefined = true
+}
+
+func (s *S) panicHookRedefinition(hook string) {
+	panicFunc(fmt.Sprintf("%v called twice. %v can only be called once", hook, hook))
 }
 
 func runSuite(t *testing.T, userProvidedSuite func(*S)) {

@@ -27,12 +27,6 @@ func TestExample(t *testing.T) {
 		s.Run("it does something", func(t *testing.T) {
 			// defines a test using standard *testing.T
 		})
-
-		s.When("in a context", func(s *testsuite.S) {
-			s.Run("it does something in this context", func(t *testing.T) {
-				// defines a test using standard *testing.T
-			})
-		})
 	})
 
 	testsuite.New(t, "another suite", func(s *testsuite.S) {

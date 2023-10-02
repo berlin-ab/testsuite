@@ -14,8 +14,9 @@ https://awesome-go.com/testing/
 - SetupSuite/TeardownSuite
 - Setup/Teardown per test
 - Multiple suites per test function
-- Nested suites
 - Simple abstraction wrapping standard testing.T
+- Enforces simplicity by not allowing multiple definitions of hooks
+- Enforces simplicity by not allowing sub suites which can make it difficult to follow changes to the state of the test
 
 ## Usage: 
 
@@ -48,12 +49,6 @@ func TestExample(t *testing.T) {
 
         s.Run("it does something", func(t *testing.T) {
             // defines a test using standard *testing.T
-        })
-
-        s.When("in a context", func(s *testsuite.S) {
-            s.Run("it does something in this context", func(t *testing.T) {
-                // defines a test using standard *testing.T
-            })
         })
     })
 
